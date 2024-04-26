@@ -1,34 +1,12 @@
-# sd-organizer
+# SD-Organizer
 
-An Electron application with React and TypeScript
+An electron-based application to help you manage your Stable diffusion creations
 
-## Recommended IDE Setup
+### Features
+- [x] Categorization of images through keybindings
+- [ ] Working with multiple directories
+- [ ] Tagging system
+- [ ] Automated Thumbnail / Twitter post generator
 
-- [VSCode](https://code.visualstudio.com/) + [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) + [Prettier](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode)
-
-## Project Setup
-
-### Install
-
-```bash
-$ npm install
-```
-
-### Development
-
-```bash
-$ npm run dev
-```
-
-### Build
-
-```bash
-# For windows
-$ npm run build:win
-
-# For macOS
-$ npm run build:mac
-
-# For Linux
-$ npm run build:linux
-```
+### Installation
+as of now, this software can only be pulled from github, so pull it and compile it yourself, fool!
