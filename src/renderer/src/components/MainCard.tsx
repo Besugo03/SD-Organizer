@@ -7,20 +7,41 @@ import { FaPaintBrush } from 'react-icons/fa'
 
 type MainCardProps = {
   imagesDir: string
-  imagesArray: string[]
-  setFoundImagesArray: (foundImagesArray: string[]) => void
+  appStateUpdater: React.Dispatch<React.SetStateAction<string>>
 }
 
-function MainCard({ imagesDir, imagesArray, setFoundImagesArray }: MainCardProps): JSX.Element {
+function MainCard({ imagesDir, appStateUpdater }: MainCardProps): JSX.Element {
   const [imageIndex, setImageIndex] = useState(0)
-  const imagedir = `${imagesDir}/${imagesArray[imageIndex]}`
+  const [imagesArray, setFoundImagesArray] = useState<string[]>([])
+  const [imagesLoaded, setImagesLoaded] = useState(false)
   let hotKeysEnabled = true
+  // get the images in the directory
+  useEffect(() => {
+    window.electron.ipcRenderer.invoke('requestImages', imagesDir).then((response) => {
+      setFoundImagesArray(response)
+      console.log('requestimages response : ', response)
+      if (response.length === 0) {
+        console.log('no images found')
+        appStateUpdater('explorer')
+      }
+      setImagesLoaded(true)
+    })
+  }, [])
 
   useEffect(() => {
-    if (imageIndex === imagesArray.length) {
-      console.log('end of images')
-      hotKeysEnabled = false
-      setFoundImagesArray([])
+    if (imagesLoaded) {
+      console.log('second useeffect')
+      console.log(imagesArray)
+      console.log(imageIndex)
+      console.log(`loaded image : ${imagesDir}\\${imagesArray[imageIndex]}`)
+      console.log('imageIndex changed')
+      console.log(imageIndex, imagesArray.length)
+      if (imageIndex === imagesArray.length) {
+        console.log('end of images')
+        hotKeysEnabled = false
+        setFoundImagesArray([])
+        appStateUpdater('explorer')
+      }
     }
   }, [imageIndex])
 
@@ -33,17 +54,17 @@ function MainCard({ imagesDir, imagesArray, setFoundImagesArray }: MainCardProps
       },
       // ,[imagedir] // in teoria va messo imagenumber, perché bisogna usare la variabile che cambia
       // !!!!!!! passare sempre le variabili che vengono usate negli useffect !!!!!!!
-      [imageIndex]
+      [imageIndex, imagesArray]
     )
 
     useHotkey(
       [],
       Key.ArrowLeft,
       () => {
-        console.log('left')
+        console.log('key left pressed for image : ', imageIndex, imagesArray[imageIndex])
         nextImageHandle(imageIndex, 'bad')
       },
-      [imageIndex]
+      [imageIndex, imagesArray]
     )
 
     useHotkey(
@@ -52,12 +73,9 @@ function MainCard({ imagesDir, imagesArray, setFoundImagesArray }: MainCardProps
       () => {
         nextImageHandle(imageIndex, 'edit')
       },
-      [imageIndex]
+      [imageIndex, imagesArray]
     )
   }
-
-  console.log(`loaded image : ${imagedir}/${imagesArray[imageIndex]}`)
-  console.log(imageIndex)
 
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const nextImageHandle = (chosenImageIndex: number, chosenOption: string) => {
@@ -100,7 +118,7 @@ function MainCard({ imagesDir, imagesArray, setFoundImagesArray }: MainCardProps
   }
   return (
     <Card className="p-3">
-      <Image width={600} alt="immagine di prova" src={imagedir} />
+      <Image width={600} alt="immagine di prova" src={`${imagesDir}\\${imagesArray[imageIndex]}`} />
       <CardFooter>
         <div className="flex justify-between w-full">
           <Button

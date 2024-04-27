@@ -66,7 +66,7 @@ app.whenReady().then(() => {
     }
     // remove from the array all files that are not images
     const filtered = explored.filter((file) => {
-      return file.endsWith('.jpg') || file.endsWith('.jpeg') || file.endsWith('.png')
+      return file.endsWith('.jpg') || file.endsWith('.png')
     })
     console.log(explored)
     console.log(filtered)
@@ -129,6 +129,24 @@ app.whenReady().then(() => {
         return postInfo[imageIndex]
       }
     }
+  })
+
+  // function that is used to explore the txt2img or img2img folders
+  // it returns all their subfolders that are formatted YYYY-MM-DD and the images inside them
+  // folders inside the subfolders are not returned.
+  ipcMain.handle('queryImageDirContents', (_, imageDir: string) => {
+    const explored = fs.readdirSync(imageDir)
+    const folders = explored.filter((file) => {
+      return file.match(/^\d{4}-\d{2}-\d{2}$/)
+    })
+    // for each folder, get the images inside it
+    const images = folders.map((folder) => {
+      const folderContents = fs.readdirSync(`${imageDir}\\${folder}`)
+      return folderContents.filter((file) => {
+        return file.endsWith('.jpg') || file.endsWith('.png')
+      })
+    })
+    return { folders, images }
   })
 
   ipcMain.handle(

@@ -1,4 +1,4 @@
-import { Card, Image, Spacer, Chip, CheckboxGroup, Checkbox } from '@nextui-org/react'
+import { Card, Image, Spacer, Chip, Checkbox } from '@nextui-org/react'
 import { useEffect, useState } from 'react'
 import { FaAlignLeft, FaImage, FaCheck, FaCopyright } from 'react-icons/fa'
 
