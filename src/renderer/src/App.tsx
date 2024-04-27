@@ -49,7 +49,7 @@ function App(): JSX.Element {
           ipcHandle(chosenDir)
         }}
       >
-        filemanager
+        Explore Dir
       </Button>
       {foundImagesArray.length === 0 ? (
         <InputDir chosenDir={chosenDir} setChosenDir={setChosenDir}></InputDir>

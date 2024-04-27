@@ -73,12 +73,11 @@ app.whenReady().then(() => {
     return filtered
   })
 
-  ipcMain.handle('moveImages', (_, dir: string, ImagesArray: string[], ImagesRating: string) => {
-    console.log('moveImages')
-    console.log(ImagesArray)
-    console.log(ImagesRating)
+  ipcMain.handle('moveImage', (_, dir: string, imageName: string, ImageRating: string) => {
+    console.log('moveImage')
+    console.log(imageName, ImageRating)
     let folder = ''
-    switch (ImagesRating) {
+    switch (ImageRating) {
       case 'good':
         folder = 'Good'
         break
@@ -91,11 +90,83 @@ app.whenReady().then(() => {
       default:
         folder = ''
     }
-    for (let i = 0; i < ImagesArray.length; i++) {
-      console.log('moving ', ImagesArray[i])
-      fs.renameSync(`${dir}\\${ImagesArray[i]}`, `${dir}\\${folder}\\${ImagesArray[i]}`)
+    fs.renameSync(`${dir}\\${imageName}`, `${dir}\\${folder}\\${imageName}`)
+  })
+
+  // this is ment to be used in the extras-images folder, to check if an image with the same name is present in the watermarked folder
+  ipcMain.handle('watermarkedImageCheck', (_, imageDir: string) => {
+    const currentDir = imageDir.split('\\').slice(0, -1).join('\\')
+    const imageName = imageDir.split('\\').slice(-1).join('\\')
+    const watermarkedImages = fs.readdirSync(`${currentDir}\\watermarked`)
+    // if the image is present in the watermarked folder, return true (the format can be both .jpg and .png)
+    if (
+      watermarkedImages.includes(imageName) ||
+      watermarkedImages.includes(imageName.replace('.png', '.jpg')) ||
+      watermarkedImages.includes(imageName.replace('.jpg', '.png'))
+    ) {
+      return true
+    } else {
+      return false
     }
   })
+
+  ipcMain.handle('queryImageInformation', (_, imageDir: string) => {
+    if (imageDir.includes('extras-images')) {
+      const imageName = imageDir.split('\\').slice(-1).join('\\')
+      const postInfo = JSON.parse(
+        fs.readFileSync(
+          'D:\\ShitsNGames\\webui-Forge\\webui_forge_cu121_torch21\\webui\\output\\extras-images\\postInfo.json',
+          'utf8'
+        )
+      )
+      const imageIndex = postInfo.findIndex(
+        (entry: { imageName: string }) => entry.imageName === imageName
+      )
+      if (imageIndex === -1) {
+        return { patreon: false, twitter: false, pixiv: false }
+      } else {
+        console.log(postInfo[imageIndex])
+        return postInfo[imageIndex]
+      }
+    }
+  })
+
+  ipcMain.handle(
+    'updateImageInformation',
+    (_, imageName: string, patreon: boolean, twitter: boolean, pixiv: boolean) => {
+      const extrasDirContents = fs.readdirSync(
+        'D:\\ShitsNGames\\webui-Forge\\webui_forge_cu121_torch21\\webui\\output\\extras-images'
+      )
+      // if the postInfo.json file is not present, create it
+      if (!extrasDirContents.includes('postInfo.json')) {
+        fs.writeFileSync(
+          'D:\\ShitsNGames\\webui-Forge\\webui_forge_cu121_torch21\\webui\\output\\extras-images\\postInfo.json',
+          JSON.stringify([])
+        )
+      }
+      // parse the postInfo.json file
+      const postInfo = JSON.parse(
+        fs.readFileSync(
+          'D:\\ShitsNGames\\webui-Forge\\webui_forge_cu121_torch21\\webui\\output\\extras-images\\postInfo.json',
+          'utf8'
+        )
+      )
+      // if there is no entry for the image, create it, otherwise update it
+      const imageIndex = postInfo.findIndex(
+        (entry: { imageName: string }) => entry.imageName === imageName
+      )
+      if (imageIndex === -1) {
+        postInfo.push({ imageName, patreon, twitter, pixiv })
+      } else {
+        postInfo[imageIndex] = { imageName, patreon, twitter, pixiv }
+      }
+      // write the new json to the file
+      fs.writeFileSync(
+        'D:\\ShitsNGames\\webui-Forge\\webui_forge_cu121_torch21\\webui\\output\\extras-images\\postInfo.json',
+        JSON.stringify(postInfo, null, 2)
+      )
+    }
+  )
 
   createWindow()
 

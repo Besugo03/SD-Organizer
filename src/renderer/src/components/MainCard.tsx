@@ -12,9 +12,6 @@ type MainCardProps = {
 }
 
 function MainCard({ imagesDir, imagesArray, setFoundImagesArray }: MainCardProps): JSX.Element {
-  const [goodImagesArray, setGoodImagesArray] = useState<string[]>([])
-  const [badImagesArray, setBadImagesArray] = useState<string[]>([])
-  const [toEditImagesArray, setToEditImagesArray] = useState<string[]>([])
   const [imageIndex, setImageIndex] = useState(0)
   const imagedir = `${imagesDir}/${imagesArray[imageIndex]}`
   let hotKeysEnabled = true
@@ -23,12 +20,6 @@ function MainCard({ imagesDir, imagesArray, setFoundImagesArray }: MainCardProps
     if (imageIndex === imagesArray.length) {
       console.log('end of images')
       hotKeysEnabled = false
-      console.log('sending good images : ', goodImagesArray)
-      window.electron.ipcRenderer.invoke('moveImages', imagesDir, goodImagesArray, 'good')
-      console.log('sending bad images : ', badImagesArray)
-      window.electron.ipcRenderer.invoke('moveImages', imagesDir, badImagesArray, 'bad')
-      console.log('sending to edit images : ', toEditImagesArray)
-      window.electron.ipcRenderer.invoke('moveImages', imagesDir, toEditImagesArray, 'edit')
       setFoundImagesArray([])
     }
   }, [imageIndex])
@@ -74,15 +65,30 @@ function MainCard({ imagesDir, imagesArray, setFoundImagesArray }: MainCardProps
     switch (chosenOption) {
       case 'good':
         console.log(`image ${chosenImageIndex} is good`)
-        setGoodImagesArray((prev) => [...prev, imagesArray[chosenImageIndex]])
+        window.electron.ipcRenderer.invoke(
+          'moveImage',
+          imagesDir,
+          imagesArray[chosenImageIndex],
+          'good'
+        )
         break
       case 'bad':
         console.log(`image ${chosenImageIndex} is bad`)
-        setBadImagesArray((prev) => [...prev, imagesArray[chosenImageIndex]])
+        window.electron.ipcRenderer.invoke(
+          'moveImage',
+          imagesDir,
+          imagesArray[chosenImageIndex],
+          'bad'
+        )
         break
       case 'edit':
         console.log(`image ${chosenImageIndex} is to edit`)
-        setToEditImagesArray((prev) => [...prev, imagesArray[chosenImageIndex]])
+        window.electron.ipcRenderer.invoke(
+          'moveImage',
+          imagesDir,
+          imagesArray[chosenImageIndex],
+          'edit'
+        )
         break
       default:
         break
