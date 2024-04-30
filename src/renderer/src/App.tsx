@@ -1,12 +1,23 @@
-import { SetStateAction, useState } from 'react'
+/* eslint-disable react/no-unescaped-entities */
+import { useEffect, useState } from 'react'
 import { Button } from '@nextui-org/button'
 import MainCard from './components/MainCard'
 import { useHotkey, Key } from '@util-hooks/use-hotkey'
-import { Spacer } from '@nextui-org/react'
+import {
+  Navbar,
+  NavbarBrand,
+  Spacer,
+  Image,
+  NavbarContent,
+  NavbarItem,
+  CheckboxGroup,
+  Checkbox
+} from '@nextui-org/react'
 import ImageEntryCard from './components/ImageEntryCard'
 import { FaFolder, FaTag } from 'react-icons/fa'
 import ExplorerCard from './components/ExplorerCard'
-
+import shibaIcon from './assets/shiba.jpg'
+import { FaGear, FaPatreon, FaPixiv, FaXTwitter, FaEyeSlash } from 'react-icons/fa6'
 function App(): JSX.Element {
   // useState restituisce un array con due elementi
   // il primo è il valore che stai gestendo
@@ -16,6 +27,7 @@ function App(): JSX.Element {
     'D:\\ShitsNGames\\webui-Forge\\webui_forge_cu121_torch21\\webui\\output\\txt2img-images\\2024-02-24'
   )
   const [appState, setAppState] = useState<string>('main')
+  const [invisibleTags, setInvisibleTags] = useState<string[]>([])
 
   useHotkey(
     //ricordarsi che questo qui é un hook custom che ha useEffect, quindi in casi di problemi va passata la dipendenza
@@ -31,15 +43,19 @@ function App(): JSX.Element {
 
   // useEffect si attiva ogni volta che cambia il valore di dir
   // se ci metti un array vuoto [] si attiva solo all'inizio perché non c'è nessuna dipendenza
-  // useEffect(() => {
-  //   console.log('dir changed')
-  // }, [dir])
+  useEffect(() => {
+    ipcHandle(
+      'D:\\ShitsNGames\\webui-Forge\\webui_forge_cu121_torch21\\webui\\output\\extras-images'
+    )
+  }, [])
 
   // test rappresenta il valore restituito dalla funzione chiamata in main
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const ipcHandle = (requested_dir: string) => {
     window.electron.ipcRenderer.invoke('requestImages', requested_dir).then((response) => {
       console.log('ipchandle response : ', response)
+      // reverse the array to show the latest images first
+      response.reverse()
       setFoundImagesArray(response)
     })
   }
@@ -58,11 +74,16 @@ function App(): JSX.Element {
         Explore Dir
       </Button> */}
       {/* <InputDir chosenDir={chosenDir} setChosenDir={setChosenDir}></InputDir> */}
-      {appState === 'main' ? (
-        <>
-          <div className="flex w-full justify-center">
+      <Navbar>
+        <NavbarBrand>
+          <Image src={shibaIcon} width={50} radius="lg" height={50} alt="logo" />
+          <Spacer x={3} />
+          <header className="text-2xl">Paw-Fect</header>
+        </NavbarBrand>
+        <NavbarContent className="hidden sm:flex gap-4" justify="center">
+          <NavbarItem>
             <Button
-              size="lg"
+              size="md"
               color="secondary"
               startContent={<FaTag />}
               onClick={() => {
@@ -70,11 +91,12 @@ function App(): JSX.Element {
                 console.log('appstate : ', appState)
               }}
             >
-              Classify Images
+              Today's Images
             </Button>
-            <Spacer x={5} />
+          </NavbarItem>
+          <NavbarItem>
             <Button
-              size="lg"
+              size="md"
               color="warning"
               variant="ghost"
               startContent={<FaFolder />}
@@ -85,23 +107,48 @@ function App(): JSX.Element {
             >
               Classify by dir
             </Button>
+          </NavbarItem>
+        </NavbarContent>
+        <NavbarContent justify="end">
+          <div className="flex justify-center">
+            <CheckboxGroup
+              size="lg"
+              orientation="horizontal"
+              value={invisibleTags}
+              onValueChange={setInvisibleTags}
+            >
+              <Checkbox value="patreon" icon={FaEyeSlash} color="danger">
+                <FaPatreon />
+              </Checkbox>
+              <Checkbox value="twitter" icon={FaEyeSlash} color="danger">
+                <FaXTwitter />
+              </Checkbox>
+              <Checkbox value="pixiv" icon={FaEyeSlash} color="danger">
+                <FaPixiv />
+              </Checkbox>
+            </CheckboxGroup>
           </div>
+          <Button isIconOnly>
+            <FaGear size={20} color="white"></FaGear>
+          </Button>
+        </NavbarContent>
+      </Navbar>
+      {appState === 'main' ? (
+        <>
           <div className="flex flex-wrap justify-evenly">
-            <ImageEntryCard
-              imageDir={
-                'D:\\ShitsNGames\\webui-Forge\\webui_forge_cu121_torch21\\webui\\output\\txt2img-images\\2024-02-24\\ToEdit\\1.png'
-              }
-            />
-            <ImageEntryCard
-              imageDir={
-                'D:\\ShitsNGames\\webui-Forge\\webui_forge_cu121_torch21\\webui\\output\\img2img-images\\2024-04-23\\00009-2351385004.png'
-              }
-            />
-
-            <ImageEntryCard imageDir="D:\ShitsNGames\webui-Forge\webui_forge_cu121_torch21\webui\output\extras-images\Untitled-3.png" />
-
-            <ImageEntryCard imageDir="D:\ShitsNGames\webui-Forge\webui_forge_cu121_torch21\webui\output\extras-images\00021.png" />
-            <ImageEntryCard imageDir="D:\ShitsNGames\webui-Forge\webui_forge_cu121_torch21\webui\output\extras-images\00028.jpg" />
+            {/*create an ImageEntryCard for each image in the extras-images directory, after getting the images through the ipchandle*/}
+            {foundImagesArray.map((imageDir) => {
+              return (
+                <ImageEntryCard
+                  key={imageDir}
+                  imageDir={
+                    'D:\\ShitsNGames\\webui-Forge\\webui_forge_cu121_torch21\\webui\\output\\extras-images\\' +
+                    imageDir
+                  }
+                  displayPreferences={invisibleTags}
+                ></ImageEntryCard>
+              )
+            })}
           </div>
         </>
       ) : null}

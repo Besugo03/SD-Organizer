@@ -1,8 +1,10 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, clipboard, nativeImage } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import fs from 'fs'
+
+const sharp = require('sharp')
 
 function createWindow(): void {
   // Create the browser window.
@@ -73,6 +75,33 @@ app.whenReady().then(() => {
     return filtered
   })
 
+  // function ment to be used in the extras-images folder, to request a thumbnail of an image.
+  ipcMain.handle('requestThumbnail', async (_, imgDir) => {
+    // first, check if the "thumbnails" folder is present, if not, create it
+    const currentDir = imgDir.split('\\').slice(0, -1).join('\\')
+    if (!fs.existsSync(`${currentDir}\\thumbnails`)) {
+      fs.mkdirSync(`${currentDir}\\thumbnails`)
+    }
+    // check if the thumbnail is already present, if not, create it using sharp
+
+    const buffer = await sharp(`${imgDir}`).resize(250, null, { fit: 'contain' }).toBuffer()
+    return `data:image/png;base64,${buffer.toString('base64')}`
+  })
+
+  // codice alternativo per le thumbnail salvate
+  // ipcMain.handle('requestThumbnail', async (_, imgDir) => {
+  //   // first, check if the "thumbnails" folder is present, if not, create it
+  //   const currentDir = imgDir.split('\\').slice(0, -1).join('\\')
+  //   const imageName = imgDir.split('\\').slice(-1).join('\\')
+  //   if (!fs.existsSync(`${currentDir}\\thumbnails`)) {
+  //     fs.mkdirSync(`${currentDir}\\thumbnails`)
+  //   }
+  //   // check if the thumbnail is already present, if not, create it using sharp
+
+  //   const buffer = await sharp(`${imgDir}`).resize(250, 250, { fit: 'contain' }).toBuffer()
+  //   return `data:image/png;base64,${buffer.toString('base64')}`
+  // })
+
   ipcMain.handle('moveImage', (_, dir: string, imageName: string, ImageRating: string) => {
     console.log('moveImage')
     console.log(imageName, ImageRating)
@@ -91,6 +120,11 @@ app.whenReady().then(() => {
         folder = ''
     }
     fs.renameSync(`${dir}\\${imageName}`, `${dir}\\${folder}\\${imageName}`)
+  })
+
+  ipcMain.handle('copyImageToClipboard', (_, imageDir: string) => {
+    const image = nativeImage.createFromPath(imageDir)
+    clipboard.writeImage(image)
   })
 
   // this is ment to be used in the extras-images folder, to check if an image with the same name is present in the watermarked folder
