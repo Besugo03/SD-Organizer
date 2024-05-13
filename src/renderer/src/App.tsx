@@ -13,9 +13,11 @@ import {
   CheckboxGroup,
   Checkbox
 } from '@nextui-org/react'
-import ImageEntryCard from './components/ImageEntryCard'
+import ImageEntryCards from './components/ImageEntryCard'
 import { FaFolder, FaTag } from 'react-icons/fa'
 import ExplorerCard from './components/ExplorerCard'
+import 'react-toastify/dist/ReactToastify.css'
+import { ToastContainer, toast } from 'react-toastify'
 import shibaIcon from './assets/shiba.jpg'
 import { FaGear, FaPatreon, FaPixiv, FaXTwitter, FaEyeSlash } from 'react-icons/fa6'
 function App(): JSX.Element {
@@ -59,7 +61,19 @@ function App(): JSX.Element {
       setFoundImagesArray(response)
     })
   }
-
+  const notify = (): void => {
+    console.log('notify')
+    toast('🦄 Wow so easy!', {
+      position: 'bottom-right',
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      theme: 'dark'
+    })
+  }
   return (
     <>
       {/* onClick si aspetta o una funzione priva di paramentri o una che ha un evento come paramentro */}
@@ -128,7 +142,12 @@ function App(): JSX.Element {
               </Checkbox>
             </CheckboxGroup>
           </div>
-          <Button isIconOnly>
+          <Button
+            isIconOnly
+            onClick={() => {
+              notify()
+            }}
+          >
             <FaGear size={20} color="white"></FaGear>
           </Button>
         </NavbarContent>
@@ -139,14 +158,14 @@ function App(): JSX.Element {
             {/*create an ImageEntryCard for each image in the extras-images directory, after getting the images through the ipchandle*/}
             {foundImagesArray.map((imageDir) => {
               return (
-                <ImageEntryCard
+                <ImageEntryCards
                   key={imageDir}
                   imageDir={
                     'D:\\ShitsNGames\\webui-Forge\\webui_forge_cu121_torch21\\webui\\output\\extras-images\\' +
                     imageDir
                   }
                   displayPreferences={invisibleTags}
-                ></ImageEntryCard>
+                ></ImageEntryCards>
               )
             })}
           </div>
@@ -171,6 +190,7 @@ function App(): JSX.Element {
       {appState === 'classify' ? (
         <MainCard imagesDir={chosenDir} appStateUpdater={setAppState}></MainCard>
       ) : null}
+      <ToastContainer />
     </>
   )
 }

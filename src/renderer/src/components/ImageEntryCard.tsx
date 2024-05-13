@@ -1,20 +1,20 @@
-import { Card, Image, Spacer, Chip, Checkbox, Spinner, Tooltip } from '@nextui-org/react'
+import { Card, Image, Spacer, Chip, Checkbox, Spinner } from '@nextui-org/react'
 import { useEffect, useState } from 'react'
 import { FaAlignLeft, FaImage, FaCheck, FaCopyright } from 'react-icons/fa'
+import { toast } from 'react-toastify'
 
 type ImageEntryCardProps = {
   imageDir: string
   // displayPreferences is a string array
   displayPreferences?: string[]
 }
-function ImageEntryCard({ imageDir, displayPreferences }: ImageEntryCardProps): JSX.Element {
+function ImageEntryCards({ imageDir, displayPreferences }: ImageEntryCardProps): JSX.Element {
   const [watermarkedAvailable, setWatermarkedAvailable] = useState(false)
   const [parteonSelected, setPatreonSelected] = useState(false)
   const [twitterSelected, setTwitterSelected] = useState(false)
   const [pixivSelected, setPixivSelected] = useState(false)
   const [socialStatesLoaded, setSocialStatesLoaded] = useState(false)
   const [thumbnailDir, setThumbnailDir] = useState('')
-  const [clipboardTooltip, setClipboardTooltip] = useState(false)
   const imageName = imageDir.split('\\').slice(-1).join('\\')
 
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
@@ -23,10 +23,13 @@ function ImageEntryCard({ imageDir, displayPreferences }: ImageEntryCardProps): 
     setWatermarkedAvailable(response)
   }
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-  const ipcCopyToClipboard = async (imageDir: string) => {
-    window.electron.ipcRenderer.invoke('copyImageToClipboard', imageDir).catch((err) => {
-      console.log(err)
-    })
+  const ipcCopyToClipboard = async (imageDir: string, watermarkedVersion?: boolean) => {
+    if (watermarkedVersion) {
+      imageDir = imageDir.replace('extras-images', 'extras-images\\watermarked')
+      imageDir = imageDir.replace('.png', '.jpg')
+    }
+    console.log(imageDir)
+    window.electron.ipcRenderer.invoke('copyImageToClipboard', imageDir)
   }
 
   useEffect(() => {
@@ -105,19 +108,28 @@ function ImageEntryCard({ imageDir, displayPreferences }: ImageEntryCardProps): 
   if (displayPreferences?.includes('patreon') && parteonSelected) {
     return <></>
   }
-  if (displayPreferences?.includes('twitter') && twitterSelected) {
+  if (displayPreferences?.includes('twitter') && (twitterSelected || !watermarkedAvailable)) {
     return <></>
   }
-  if (displayPreferences?.includes('pixiv') && pixivSelected) {
+  if (displayPreferences?.includes('pixiv') && (pixivSelected || !watermarkedAvailable)) {
     return <></>
   }
   return (
     <div className="flex flex-wrap justify-evenly content-center">
       <Card
         isPressable
-        onPress={() => {
-          ipcCopyToClipboard(imageDir)
-          setClipboardTooltip(true)
+        onPress={(event) => {
+          if (event.shiftKey && folder === 'watermarked') {
+            console.log('shift + click')
+            ipcCopyToClipboard(imageDir, true)
+            toast('👁️ Copied watermarked image to clipboard', {
+              theme: 'dark',
+              pauseOnFocusLoss: false
+            })
+          } else {
+            ipcCopyToClipboard(imageDir)
+            toast.success('Copied image to clipboard', { theme: 'dark', pauseOnFocusLoss: false })
+          }
         }}
         className="p-2 max-w-64 m-4 h-min"
       >
@@ -130,15 +142,7 @@ function ImageEntryCard({ imageDir, displayPreferences }: ImageEntryCardProps): 
             <Spinner></Spinner>
           </div>
         ) : (
-          <Tooltip
-            isOpen={clipboardTooltip}
-            onClose={() => {
-              setClipboardTooltip(false)
-            }}
-            content="Image copied to clipboard"
-          >
-            <Image src={thumbnailDir} loading="lazy" />
-          </Tooltip>
+          <Image src={thumbnailDir} loading="lazy" width={200} className="z-0" />
         )}
 
         <Spacer y={1} />
@@ -193,4 +197,4 @@ function ImageEntryCard({ imageDir, displayPreferences }: ImageEntryCardProps): 
     </div>
   )
 }
-export default ImageEntryCard
+export default ImageEntryCards

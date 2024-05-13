@@ -14,7 +14,10 @@ function MainCard({ imagesDir, appStateUpdater }: MainCardProps): JSX.Element {
   const [imageIndex, setImageIndex] = useState(0)
   const [imagesArray, setFoundImagesArray] = useState<string[]>([])
   const [imagesLoaded, setImagesLoaded] = useState(false)
+  const [, setNextImage] = useState<HTMLImageElement | null>(null) // add a state for the preloaded next image
+
   let hotKeysEnabled = true
+
   // get the images in the directory
   useEffect(() => {
     window.electron.ipcRenderer.invoke('requestImages', imagesDir).then((response) => {
@@ -30,20 +33,26 @@ function MainCard({ imagesDir, appStateUpdater }: MainCardProps): JSX.Element {
 
   useEffect(() => {
     if (imagesLoaded) {
-      console.log('second useeffect')
-      console.log(imagesArray)
-      console.log(imageIndex)
-      console.log(`loaded image : ${imagesDir}\\${imagesArray[imageIndex]}`)
       console.log('imageIndex changed')
+      console.log(`current image : ${imagesDir}\\${imagesArray[imageIndex]}`)
       console.log(imageIndex, imagesArray.length)
       if (imageIndex === imagesArray.length) {
-        console.log('end of images')
+        console.log('end of images reached')
         hotKeysEnabled = false
         setFoundImagesArray([])
         appStateUpdater('explorer')
       }
     }
   }, [imageIndex])
+
+  useEffect(() => {
+    if (imagesLoaded && imageIndex < imagesArray.length - 1) {
+      const nextImageSrc = `${imagesDir}\\${imagesArray[imageIndex + 1]}`
+      const img = new window.Image()
+      img.src = nextImageSrc
+      setNextImage(img)
+    }
+  }, [imageIndex, imagesArray, imagesLoaded])
 
   if (hotKeysEnabled) {
     useHotkey(
@@ -52,8 +61,6 @@ function MainCard({ imagesDir, appStateUpdater }: MainCardProps): JSX.Element {
       () => {
         nextImageHandle(imageIndex, 'good')
       },
-      // ,[imagedir] // in teoria va messo imagenumber, perché bisogna usare la variabile che cambia
-      // !!!!!!! passare sempre le variabili che vengono usate negli useffect !!!!!!!
       [imageIndex, imagesArray]
     )
 
@@ -61,7 +68,6 @@ function MainCard({ imagesDir, appStateUpdater }: MainCardProps): JSX.Element {
       [],
       Key.ArrowLeft,
       () => {
-        console.log('key left pressed for image : ', imageIndex, imagesArray[imageIndex])
         nextImageHandle(imageIndex, 'bad')
       },
       [imageIndex, imagesArray]
@@ -77,7 +83,6 @@ function MainCard({ imagesDir, appStateUpdater }: MainCardProps): JSX.Element {
     )
   }
 
-  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const nextImageHandle = (chosenImageIndex: number, chosenOption: string) => {
     // add the image to the corresponding array
     switch (chosenOption) {
@@ -111,11 +116,12 @@ function MainCard({ imagesDir, appStateUpdater }: MainCardProps): JSX.Element {
       default:
         break
     }
-    console.log('print imagehandle : ', chosenImageIndex, chosenOption)
+    console.log('imageHandle index,option : ', chosenImageIndex, chosenOption)
     // while the file selected is not an image, skip to the next one
     setImageIndex((prev) => prev + 1) // usato una funzione per far si che si refreshi l'immagine. setimagenumber usa la funzione fornita per calcolare il nuovo valore
     console.log(imageIndex)
   }
+
   return (
     <Card className="p-3">
       <Image width={600} alt="immagine di prova" src={`${imagesDir}\\${imagesArray[imageIndex]}`} />

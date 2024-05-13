@@ -11,7 +11,6 @@ type FoldersImagesState = {
   folders: string[]
   images: string[][]
 }
-
 function ExplorerCard({
   directory,
   appStateUpdater,
@@ -24,6 +23,7 @@ function ExplorerCard({
   useEffect(() => {
     window.electron.ipcRenderer.invoke('queryImageDirContents', directory).then((response) => {
       console.log(response)
+      // reverse the array to show the latest images first
       setFoldersImages(response)
     })
   }, [])

@@ -4,6 +4,8 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import fs from 'fs'
 
+const appDir = app.getPath('userData')
+
 const sharp = require('sharp')
 
 function createWindow(): void {
@@ -77,11 +79,6 @@ app.whenReady().then(() => {
 
   // function ment to be used in the extras-images folder, to request a thumbnail of an image.
   ipcMain.handle('requestThumbnail', async (_, imgDir) => {
-    // first, check if the "thumbnails" folder is present, if not, create it
-    const currentDir = imgDir.split('\\').slice(0, -1).join('\\')
-    if (!fs.existsSync(`${currentDir}\\thumbnails`)) {
-      fs.mkdirSync(`${currentDir}\\thumbnails`)
-    }
     // check if the thumbnail is already present, if not, create it using sharp
 
     const buffer = await sharp(`${imgDir}`).resize(250, null, { fit: 'contain' }).toBuffer()
@@ -121,7 +118,7 @@ app.whenReady().then(() => {
     }
     fs.renameSync(`${dir}\\${imageName}`, `${dir}\\${folder}\\${imageName}`)
   })
-
+  // watermarkedVersion boolean parameter is optional
   ipcMain.handle('copyImageToClipboard', (_, imageDir: string) => {
     const image = nativeImage.createFromPath(imageDir)
     clipboard.writeImage(image)
@@ -145,14 +142,13 @@ app.whenReady().then(() => {
   })
 
   ipcMain.handle('queryImageInformation', (_, imageDir: string) => {
+    // if the postInfo.json file is not present, create it inside of the appDir.
+    if (!fs.existsSync(appDir + '\\postInfo.json')) {
+      fs.writeFileSync(appDir + '\\postInfo.json', JSON.stringify([]))
+    }
     if (imageDir.includes('extras-images')) {
       const imageName = imageDir.split('\\').slice(-1).join('\\')
-      const postInfo = JSON.parse(
-        fs.readFileSync(
-          'D:\\ShitsNGames\\webui-Forge\\webui_forge_cu121_torch21\\webui\\output\\extras-images\\postInfo.json',
-          'utf8'
-        )
-      )
+      const postInfo = JSON.parse(fs.readFileSync(appDir + '\\postInfo.json', 'utf8'))
       const imageIndex = postInfo.findIndex(
         (entry: { imageName: string }) => entry.imageName === imageName
       )
@@ -170,6 +166,7 @@ app.whenReady().then(() => {
   // folders inside the subfolders are not returned.
   ipcMain.handle('queryImageDirContents', (_, imageDir: string) => {
     const explored = fs.readdirSync(imageDir)
+    explored.reverse()
     const folders = explored.filter((file) => {
       return file.match(/^\d{4}-\d{2}-\d{2}$/)
     })
@@ -180,6 +177,7 @@ app.whenReady().then(() => {
         return file.endsWith('.jpg') || file.endsWith('.png')
       })
     })
+    console.log('queryImageDirContents returned', { folders, images })
     return { folders, images }
   })
 
@@ -191,18 +189,11 @@ app.whenReady().then(() => {
       )
       // if the postInfo.json file is not present, create it
       if (!extrasDirContents.includes('postInfo.json')) {
-        fs.writeFileSync(
-          'D:\\ShitsNGames\\webui-Forge\\webui_forge_cu121_torch21\\webui\\output\\extras-images\\postInfo.json',
-          JSON.stringify([])
-        )
+        console.log('postInfo.json not found, creating it...')
+        fs.writeFileSync(appDir + '\\postInfo.json', JSON.stringify([]))
       }
       // parse the postInfo.json file
-      const postInfo = JSON.parse(
-        fs.readFileSync(
-          'D:\\ShitsNGames\\webui-Forge\\webui_forge_cu121_torch21\\webui\\output\\extras-images\\postInfo.json',
-          'utf8'
-        )
-      )
+      const postInfo = JSON.parse(fs.readFileSync(appDir + '\\postInfo.json', 'utf8'))
       // if there is no entry for the image, create it, otherwise update it
       const imageIndex = postInfo.findIndex(
         (entry: { imageName: string }) => entry.imageName === imageName
@@ -213,10 +204,8 @@ app.whenReady().then(() => {
         postInfo[imageIndex] = { imageName, patreon, twitter, pixiv }
       }
       // write the new json to the file
-      fs.writeFileSync(
-        'D:\\ShitsNGames\\webui-Forge\\webui_forge_cu121_torch21\\webui\\output\\extras-images\\postInfo.json',
-        JSON.stringify(postInfo, null, 2)
-      )
+      fs.writeFileSync(appDir + '\\postInfo.json', JSON.stringify(postInfo, null, 2))
+      console.log('updateImageInformation', { imageName, patreon, twitter, pixiv })
     }
   )
 
