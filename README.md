@@ -1,5 +1,7 @@
 # Paw-Fect
-A tool for managing, watermarking, posting and viewing your images (centered around Stable Diffusion). Made with Electron, love and pre-made components.
+A tool for managing, watermarking, posting and viewing your images.
+Intended to be used for image editing/posting in general, even though the pipeline mainly comes from stable-diffusion generations since it's what i know.
+Made with Electron (so it can run kinda everywhere), love and pre-made components.
 ![image](https://github.com/Besugo03/SD-Organizer/assets/50185430/4c11814f-666a-4423-82b6-bf979b13c5e1)
 
 ### Features
